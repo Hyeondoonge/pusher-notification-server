@@ -189,7 +189,9 @@ const notifyCreateNewTeamProject = async ({ projectName, teamId, source }) => {
 const notifyCreateTask = ({ projectId, target, objective, source, type }) => {
   console.log(target, objective, source, type);
 
-  const members = target.map((member) => member.id);
+  const members = []; 
+  target.map((member) => {if (member.id !== source) {members.push(member.id)} });
+  console.log(members);
 
     beamsClient
     .publishToInterests(members, {
