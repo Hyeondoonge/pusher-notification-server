@@ -218,8 +218,9 @@ const notifyCreateTask = ({ projectId, target, objective, source, type }) => {
 
 // 새로운 사용자가 팀 팔로우 시
 const notifyNewTeamFollower = async ({ teamId, source }) => {
-  const members = await fetch(`http://3.15.16.150:8090/api/teams/${teamId}/members`)
-  .then((res) => res.json()).then((res) => res.map((member) => member.id));
+  const members = [];
+  await fetch(`http://3.15.16.150:8090/api/teams/${teamId}/members`)
+  .then((res) => res.json()).then((res) => res.map((member) => { if(source !== member.id) {members.push(member.id)}}));
 
   const teamName = await fetch(`http://3.15.16.150:8090/api/teams/${teamId}`)
   .then((res) => res.json()).then((res) => res.name);
