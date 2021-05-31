@@ -30,6 +30,7 @@ app.post('/push-notification', (req, res) => {
   if (type == 'invite_team') notifyInviteTeam(req.body); // 팀 초대 알림
   if (type == 'delegate_team_master') notifyDelegateTeamMaster(req.body); // 팀 마스터 위임
   if (type == 'delegate_project_master') notifyDelegateProjectMaster(req.body); // 프로젝트 마스터 위임
+  if (type == 'postLike') notifyPostLike(req.body); // 좋아여
 
   res.status(201).send({ msg: 'ok' });
 });
@@ -337,7 +338,7 @@ const notifyNewComment = ({ target, source, type }) => {
 
 const notifyNewPost = async ({ targets, source, projectId, projectName }) => {
   // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
-  const realTargets = [...targets].filter((id) => id === source);
+  const realTargets = [...targets].filter((id) => id !== source);
   if (realTargets.length === 0) return;
 
   beamsClient
@@ -373,6 +374,32 @@ const notifyNewReply = async ({ target, source, projectId }) => {
         notification: {
           "title": 'TeamLog',
           "body": `${source}님이 나의 댓글에 답글을 남겼습니다.`,
+          "deep_link": `https://teamlog.netlify.app/projects/${projectId}/post`,
+          "icon": "http://localhost:3001/pusher/logo.png",
+        },
+        data: {
+          some: 'meta',
+        },
+        time_to_live: 2419200,
+      },
+    })
+    .then((publishResponse) => {
+      console.log("Just published:", publishResponse.publishId);
+    })
+    .catch((error) => {
+      console.log("Error:", error);
+    });
+};
+
+const notifyPostLike = ({ target, source, projectId }) => {
+  if (target === source) return;
+
+  beamsClient
+    .publishToInterests([target], { // targets
+      web: {
+        notification: {
+          "title": 'TeamLog',
+          "body": `${source}님이 나의 게시물에 좋아요를 눌렀습니다.`,
           "deep_link": `https://teamlog.netlify.app/projects/${projectId}/post`,
           "icon": "http://localhost:3001/pusher/logo.png",
         },
