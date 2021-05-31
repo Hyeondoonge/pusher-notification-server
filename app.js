@@ -11,7 +11,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const app = express();
-const port = 80;
+const port = 3001;
 
 app.use(bodyParser.json());
 app.use(cors());
@@ -33,6 +33,8 @@ app.post('/push-notification', (req, res) => {
 
   res.status(201).send({ msg: 'ok' });
 });
+
+// 게시물 좋아요 알림
 
 // 프로젝트 마스터 위임
 const notifyDelegateProjectMaster = async ({ projectId, target, source }) => {  
@@ -149,8 +151,9 @@ const notifyInviteTeam = async ({ teamId, targets, source }) => {
 
 // 새 프로젝트 팀 생성 시
 const notifyCreateNewTeamProject = async ({ projectName, teamId, source }) => {
-  const targets = await fetch(`http://3.15.16.150:8090/api/teams/${teamId}/members`)
-        .then((res) => res.json()).then((res) => res.map((member) => member.id));
+  const targets = [];
+  await fetch(`http://3.15.16.150:8090/api/teams/${teamId}/members`)
+        .then((res) => res.json()).then((res) => res.map((member) => {if (member.id !== source) targets.push(member.id)}));
   
   const teamName = await fetch(`http://3.15.16.150:8090/api/teams/${teamId}`)
         .then((res) => res.json()).then((res) => res.name);
