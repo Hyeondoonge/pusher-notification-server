@@ -168,7 +168,7 @@ const notifyCreateNewTeamProject = async ({ projectName, teamId, source }) => {
         notification: {
           "title": 'TeamLog',
           "body": `${source}님이 ${teamName}팀 내에 ${projectName} 프로젝트를 생성했습니다.`,
-          "deep_link": `https://teamlog.netlify.app/projects/${teamId}/projects`,
+          "deep_link": `https://teamlog.netlify.app/projects/${teamId}`,
           "icon": "http://localhost:5500/pusher/logo.png",
         },
         data: {
@@ -222,11 +222,14 @@ const notifyNewTeamFollower = async ({ teamId, source }) => {
   await fetch(`http://3.15.16.150:8090/api/teams/${teamId}/members`)
   .then((res) => res.json()).then((res) => res.map((member) => { if(source !== member.id) {members.push(member.id)}}));
 
+  const realTargets = [...members].filter((id) => id !== source);
+  if (realTargets.length === 0) return;
+
   const teamName = await fetch(`http://3.15.16.150:8090/api/teams/${teamId}`)
   .then((res) => res.json()).then((res) => res.name);
 
     beamsClient
-    .publishToInterests(members, {
+    .publishToInterests(realTargets , {
       web: {
         notification: {
           "title": 'Teamlog',
@@ -253,9 +256,12 @@ const notifyNewProjectFollower = ({ projectId, target, objective, source, type }
   console.log(target, objective, source, type);
 
   const members = target.map((member) => member.id);
+  
+  const realTargets = [...members].filter((id) => id !== source);
+  if (realTargets.length === 0) return;
 
     beamsClient
-    .publishToInterests(members, {
+    .publishToInterests(realTargets, {
       web: {
         notification: {
           "title": 'Teamlog',
@@ -282,13 +288,20 @@ const notifyUpdatePost = async ({ source, project, postId }) => {
   const targets = await fetch(`http://3.15.16.150:8090/api/projects/${project.id}/members`)
         .then((res) => res.json()).then((res) => res.map((member) => member.id));
 
+  const realTargets = [...targets].filter((id) => id !== source);
+  if (realTargets.length === 0) return;
+
   const postContent = await fetch(`http://3.15.16.150:8090/api/posts/${postId}`)
         .then((res) => res.json()).then((res) => res.contents);
 
   console.log(postContent.substr(0, 10));
 
+
+  const realTargets = [...targets].filter((id) => id !== source);
+  if (realTargets.length === 0) return;
+
   beamsClient
-    .publishToInterests(targets, { // targets
+    .publishToInterests(realTargets, { // targets
       web: {
         notification: {
           "title": 'TeamLog',
@@ -312,7 +325,7 @@ const notifyUpdatePost = async ({ source, project, postId }) => {
 
 /////////////////////////////////////////////////////// 밑에서부터는 원래 코드
 
-const notifyNewComment = ({ target, source, type }) => {
+const notifyNewComment = ({ target, source }) => {
     // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
     if (target === source) return;
 
