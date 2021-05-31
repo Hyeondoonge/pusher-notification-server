@@ -334,7 +334,7 @@ const notifyNewComment = ({ target, source, type }) => {
 
 const notifyNewPost = async ({ targets, source, projectId, projectName }) => {
   // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
-  const realTargets = [...targets].filter((id) => id === source);
+  const realTargets = [...targets].filter((id) => id !== source);
   if (realTargets.length === 0) return;
 
   beamsClient
