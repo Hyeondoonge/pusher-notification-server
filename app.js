@@ -19,6 +19,7 @@ app.use(cors());
 app.post('/push-notification', (req, res) => {
   const { type } = req.body;
   if (type === 'comment') notifyNewComment(req.body); // 댓글 등록 알림
+  if (type === 'reply') notifyNewReply(req.body);
   if (type === 'post') notifyNewPost(req.body); // 포스트 등록 알림
   if (type === 'follow_project') notifyNewProjectFollower(req.body); // 프로젝트 팔로우 알림
   if (type == 'create_task') notifyCreateTask(req.body); // 태스크 생성 알림
@@ -306,7 +307,7 @@ const notifyUpdatePost = async ({ source, project, postId }) => {
 
 const notifyNewComment = ({ target, source, type }) => {
     // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
-    console.log(target, source, type);
+    if (target === source) return;
 
     beamsClient
       .publishToInterests([target], {
@@ -314,8 +315,8 @@ const notifyNewComment = ({ target, source, type }) => {
           notification: {
             "title": 'Teamlog',
             "body": `${source}님이 내 게시물에 댓글을 남겼습니다.`,
-            "deep_link": "https://teamlog.netlify.app/main",
-            "icon": "http://localhost:5500/pusher/logo.png",
+            "deep_link": `https://teamlog.netlify.app/projects/${projectId}/post`,
+            "icon": "http://localhost:3001/pusher/logo.png",
           },
           data: {
             some: 'meta',
@@ -331,24 +332,19 @@ const notifyNewComment = ({ target, source, type }) => {
       });
   }
 
-const notifyNewPost = async ({ source, projectId }) => {
+const notifyNewPost = async ({ targets, source, projectId, projectName }) => {
   // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
-  const targets = await fetch(`http://3.15.16.150:8090/api/projects/${projectId}/members`)
-        .then((res) => res.json()).then((res) => res.map((member) => member.id));
-  
-  const projectName = await fetch(`http://3.15.16.150:8090/api/projects/${projectId}`)
-        .then((res) => res.json()).then((res) => res.name);
-
-  console.log(targets);
+  const realTargets = [...targets].filter((id) => id === source);
+  if (realTargets.length === 0) return;
 
   beamsClient
-    .publishToInterests(targets, { // targets
+    .publishToInterests(realTargets, { // targets
       web: {
         notification: {
           "title": 'TeamLog',
-          "body": `${source}님이 ${projectName}프로젝트에 글을 남겼습니다.`,
+          "body": `${source}님이 ${projectName} 프로젝트에 글을 남겼습니다.`,
           "deep_link": `https://teamlog.netlify.app/projects/${projectId}/post`,
-          "icon": "http://localhost:5500/pusher/logo.png",
+          "icon": "http://localhost:3001/pusher/logo.png",
         },
         data: {
           some: 'meta',
@@ -362,8 +358,35 @@ const notifyNewPost = async ({ source, projectId }) => {
     .catch((error) => {
       console.log("Error:", error);
     });
-}
+};
+
+const notifyNewReply = async ({ target, source, projectId }) => {
+  // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
+  if (target === source) return;
+
+  beamsClient
+    .publishToInterests([target], { // targets
+      web: {
+        notification: {
+          "title": 'TeamLog',
+          "body": `${source}님이 나의 댓글에 답글을 남겼습니다.`,
+          "deep_link": `https://teamlog.netlify.app/projects/${projectId}/post`,
+          "icon": "http://localhost:3001/pusher/logo.png",
+        },
+        data: {
+          some: 'meta',
+        },
+        time_to_live: 2419200,
+      },
+    })
+    .then((publishResponse) => {
+      console.log("Just published:", publishResponse.publishId);
+    })
+    .catch((error) => {
+      console.log("Error:", error);
+    });
+};
 
 app.listen(port, () => {
-console.log(`Example app listening at http://localhost:${port}`)
+  console.log(`Example app listening at http://localhost:${port}`)
 });
