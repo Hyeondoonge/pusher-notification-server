@@ -1,10 +1,11 @@
 const PushNotifications = require("@pusher/push-notifications-server");
 const fetch = require('node-fetch');
+const env = require('dotenv').config();
 
 // 알림 서버
 let beamsClient = new PushNotifications({
-  instanceId: "9626f19b-467e-44bb-9702-f4ea986cab5e",
-  secretKey: "18284F667805ABC4B341AF6D1A413F3F0A064E7265CD071A89E1B59C5C524378",
+  instanceId: process.env.INSTANCE_ID,
+  secretKey: process.env.SECRET_KEY,
 });
 
 const express = require('express');
@@ -18,20 +19,48 @@ app.use(cors());
 
 app.post('/push-notification', (req, res) => {
   const { type } = req.body;
-  if (type === 'comment') notifyNewComment(req.body); // 댓글 등록 알림
-  if (type === 'reply') notifyNewReply(req.body);
-  if (type === 'post') notifyNewPost(req.body); // 포스트 등록 알림
-  if (type === 'follow_project') notifyNewProjectFollower(req.body); // 프로젝트 팔로우 알림
-  if (type == 'create_task') notifyCreateTask(req.body); // 태스크 생성 알림
-  if (type == 'create_team_project') notifyCreateNewTeamProject(req.body) // 팀 내 프로젝트 생성 알림
-  if (type == 'follow_team') notifyNewTeamFollower(req.body); // 팀 팔로우 알림
-  if (type == 'update_post') notifyUpdatePost(req.body); // 게시물 수정 알림
-  if (type == 'invite_project') notifyInviteProject(req.body); // 프로젝트 초대 알림
-  if (type == 'invite_team') notifyInviteTeam(req.body); // 팀 초대 알림
-  if (type == 'delegate_team_master') notifyDelegateTeamMaster(req.body); // 팀 마스터 위임
-  if (type == 'delegate_project_master') notifyDelegateProjectMaster(req.body); // 프로젝트 마스터 위임
-  if (type == 'postLike') notifyPostLike(req.body); // 좋아여
 
+  switch (type) {
+    case 'comment': 
+      notifyNewComment(req.body);
+      break;
+    case 'reply': 
+      notifyNewReply(req.body);
+      break;
+    case 'post': 
+      notifyNewPost(req.body);
+      break;
+    case 'follow_project': 
+      notifyNewProjectFollower(req.body); 
+      break;
+    case 'create_task': 
+      notifyCreateTask(req.body);
+      break;
+    case 'create_team_project': 
+      notifyCreateNewTeamProject(req.body);
+      break;
+    case 'follow_team': 
+      notifyNewTeamFollower(req.body);
+      break;
+    case 'update_post': 
+      notifyUpdatePost(req.body);
+      break;
+    case 'invite_project': 
+      notifyInviteProject(req.body);
+      break;
+    case 'invite_team': 
+      notifyInviteTeam(req.body);
+      break;
+    case 'delegate_team_master': 
+      notifyDelegateTeamMaster(req.body);
+      break;
+    case 'delegate_project_master': 
+      notifyDelegateProjectMaster(req.body);
+      break;
+    case 'postLike': 
+      notifyPostLike(req.body); 
+      break;
+  };
   res.status(201).send({ msg: 'ok' });
 });
 
@@ -290,10 +319,6 @@ const notifyUpdatePost = async ({ source, project, postId }) => {
 
   console.log(postContent.substr(0, 10));
 
-
-  const realTargets = [...targets].filter((id) => id !== source);
-  if (realTargets.length === 0) return;
-
   beamsClient
     .publishToInterests(realTargets, { // targets
       web: {
@@ -319,7 +344,7 @@ const notifyUpdatePost = async ({ source, project, postId }) => {
 
 /////////////////////////////////////////////////////// 밑에서부터는 원래 코드
 
-const notifyNewComment = ({ target, source }) => {
+const notifyNewComment = ({ target, source, projectId }) => {
     // client로 부터 요청을 받아 특정 사용자에게 푸시 알림을 전송
     if (target === source) return;
 
